@@ -2,9 +2,10 @@
 
 # DevSoc Subcommittee Recruitment: Chaos Backend
 
-***Complete as many questions as you can.***
+**_Complete as many questions as you can._**
 
 ## Question 1
+
 You have been given a skeleton function `process_data` in the `data.rs` file.
 Complete the parameters and body of the function so that given a JSON request of the form
 
@@ -15,6 +16,7 @@ Complete the parameters and body of the function so that given a JSON request of
 ```
 
 the handler returns the following JSON:
+
 ```json
 {
   "string_len": 11,
@@ -27,27 +29,40 @@ Edit the `DataResponse` and `DataRequest` structs as you need.
 ## Question 2
 
 ### a)
+
 Write (Postgres) SQL `CREATE TABLE` statements to create the following schema.
 Make sure to include foreign keys for the relationships that will `CASCADE` upon deletion.
 ![Database Schema](db_schema.png)
 
 **Answer box:**
+
 ```sql
 CREATE TABLE forms (
-    --     Add columns here
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE questions (
-    --     Add columns here
+    id SERIAL PRIMARY KEY,
+    form_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    question_type question_type NOT NULL,
+    FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
 );
 
 CREATE TABLE question_options (
-    --     Add columns here
+    id SERIAL PRIMARY KEY,
+    question_id INTEGER NOT NULL,
+    option TEXT NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
 );
 ```
 
 ### b)
+
 Using the above schema, write a (Postgres) SQL `SELECT` query to return all questions in the following format, given the form id `26583`:
+
 ```
    id    |   form_id   |           title             |   question_type   |     options
 ------------------------------------------------------------------------------------------------------------
@@ -57,6 +72,25 @@ Using the above schema, write a (Postgres) SQL `SELECT` query to return all ques
 ```
 
 **Answer box:**
+
 ```sql
--- Write query here
+WITH options_grouped AS (
+    SELECT
+        q.id AS question_id,
+        COALESCE(json_agg(o.option), '[null]') AS options
+    FROM questions q
+    LEFT JOIN question_options o ON q.id = o.question_id
+    WHERE q.form_id = 26583
+    GROUP BY q.id
+)
+
+SELECT
+    q.id,
+    q.form_id,
+    q.title,
+    q.question_type,
+    og.options
+FROM questions q
+JOIN options_grouped og ON q.id = og.question_id
+WHERE q.form_id = 26583;
 ```
